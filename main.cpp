@@ -106,7 +106,7 @@ double init_param[7] = {0,0,0,1,0,0,0};
             Eigen::Matrix3d omega_skew_pow2 = omega_skew * omega_skew;
             J = Eigen::Matrix3d::Identity() +
                 (1-cos(theta))/(theta*theta)*omega_skew +
-                (theta - sin(theta))/theta * omega_skew_pow2;
+                (theta - sin(theta))/(pow(theta,3)) * omega_skew_pow2;
         }
 
         delta_t = J*upslion;
