@@ -1,0 +1,6 @@
+Log file created at: 2022/12/14 00:30:16
+Running on machine: ubuntu
+Running duration (h:mm:ss): 0:00:00
+Log line format: [IWEF]yyyymmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I20221214 00:30:16.237447  7079 main.cpp:227] Options::max_num_iterations: 700
+I20221214 00:30:16.297672  7079 main.cpp:237] Ceres Solver Report: Iterations: 646, Initial cost: 7.881903e+01, Final cost: 2.982483e-12, Termination: CONVERGENCE
