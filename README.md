@@ -1,3 +1,3 @@
-# LearnCeres
-Learn how to use ceres
-test
+根据Ceres官方文档，学习如何使用Ceres进行优化
+通过SizeCostFunction 和LocalParameterization 实现旋转过程中显示se3的求导
+对于delta_x增量非常小的时候，需要对Quaterniond 的虚部系数和 J进行泰勒展开和化简
