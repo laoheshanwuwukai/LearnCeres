@@ -1,0 +1,10 @@
+Log file created at: 2022/12/13 05:59:42
+Running on machine: ubuntu
+Running duration (h:mm:ss): 0:00:00
+Log line format: [IWEF]yyyymmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I20221213 05:59:42.403906 13231 main.cpp:227] Options::max_num_iterations: 500
+I20221213 05:59:42.451661 13231 main.cpp:237] Ceres Solver Report: Iterations: 501, Initial cost: 7.881903e+01, Final cost: 8.915534e-09, Termination: NO_CONVERGENCE
+I20221213 05:59:42.452159 13231 main.cpp:247] Rotation_ans:
+000.238095 000.190476 000.952381
+000.723809 000.619048 0-0.304762
+0-0.647619 000.761905 0.00952396
