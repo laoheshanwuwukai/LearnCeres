@@ -23,7 +23,7 @@ include(cmake/Eigen3.cmake)
 include(cmake/ceres.cmake)
 include(cmake/glog.cmake)
 include(cmake/Sophus.cmake)
-include(cmake/global_difination.cmake)
+# include(cmake/global_difination.cmake)
 include(cmake/yaml.cmake)
 #include dir
 include_directories(${PROJECT_SOURCE_DIR}/include)

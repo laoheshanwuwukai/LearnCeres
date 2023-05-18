@@ -15,6 +15,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "global_defination/global_defination.h"
+#include "data.cpp"
 typedef Eigen::Matrix<double , 6 ,1> Vector6d;
 using std::cout;
 using std::endl;
@@ -193,9 +194,14 @@ public:
 
 int main(int argc , char ** argv){
 
-    google::InitGoogleLogging(argv[0]);
-    FLAGS_alsologtostderr = true;
-    FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
+    //TODO 
+
+    Eigen::Matrix4d test = HandEye_data::cam1;
+    std::cout<< test<<std::endl;
+    return 0;
+    // google::InitGoogleLogging(argv[0]);
+    // FLAGS_alsologtostderr = true;
+    // FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
     std::string config_file_path = global_defination::WORK_SPACE_PATH +"/config/config.yaml";
     YAML::Node config_node = YAML::LoadFile(config_file_path);
     /*********数据**********/
@@ -245,6 +251,5 @@ int main(int argc , char ** argv){
     cout<<"Translation: \n"<<t_ans.transpose()<<endl;
 
     
-     
     return 0;
 }
