@@ -23,6 +23,7 @@ include(cmake/Eigen3.cmake)
 include(cmake/ceres.cmake)
 include(cmake/glog.cmake)
 include(cmake/Sophus.cmake)
+include(cmake/opencv.cmake)
 # include(cmake/global_difination.cmake)
 include(cmake/yaml.cmake)
 #include dir
@@ -44,5 +45,5 @@ add_executable( ${PROJECT_NAME}
 #export targets:Ceres::ceres.
 #So target_link_libraries(LearnCeres Ceres::ceres) isn't usefull;
 #However , historically the Ceres did not have a namespcae and was just called ceres
-target_link_libraries(${PROJECT_NAME} ${ALL_3DParty_LIB})
+target_link_libraries(${PROJECT_NAME} ${ALL_3DParty_LIB} )
 

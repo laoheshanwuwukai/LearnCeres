@@ -9,8 +9,7 @@
 #include <ceres/sized_cost_function.h>
 #include <ceres/problem.h>
 #include <ceres/solver.h>
-#include <opencv2/core.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
+
 #include <glog/logging.h>
 
 #include <yaml-cpp/yaml.h>
@@ -191,47 +190,10 @@ public:
     }
 };
 
-cv::Mat Eigen2Opencv(const Eigen::Matrix3d input ){
-    cv::Mat ret;
-    ret = (cv::Mat_<double>(3,3)<<
-    input(0,0) , input(0,1) , input(0,2),
-    input(1,0) , input(1,1) , input(1,2),
-    input(2,0) , input(2,1) , input(2,2));
 
-    return ret;
-
-}
 
 int main(int argc , char ** argv){
 
-    //TODO 
-
-    std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
-    std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
-    std::vector<Eigen::Vector3d> A; //Robot pose 
-    std::vector<Eigen::Vector3d> B;  //Camera pose
-
-    for(int i= 0 ; i<cameradata.size()-1 ; i++){
-        for(int j = i+1 ; j<cameradata.size() ; j++){
-            Eigen::Matrix3d hgij = 
-            (robotdata[j].block<3,3>(0,0).transpose())
-            * (robotdata[i].block<3,3>(0,0));
-
-            Eigen::Matrix3d hcij = 
-            (cameradata[j].block<3,3>(0,0)) *
-            (cameradata[i].block<3,3>(0,0).transpose());
-
-            cv::Mat tempa = Eigen2Opencv(hgij);
-            cv::Mat tempb = Eigen2Opencv(hcij);
-
-            //TODO use cv::Rodrigues change R to rotation vector
-        }
-    }
-    
-
-
-    
-    return 0;
     // google::InitGoogleLogging(argv[0]);
     // FLAGS_alsologtostderr = true;
     // FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
