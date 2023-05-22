@@ -56,16 +56,7 @@ const double q_param[4] = {0.39036 ,
 
 const double t_param[3] = {1,2,3};
 
-// double init_param[7] = {0,0,0,1,0,0,0};
-double init_param[7] = {
-0.00443276,
-0.00410283,
-0.999621,
--0.0268464,
-0,
-0,
-0
-};
+double init_param[7] = {0,0,0,1,0,0,0};
 
     /**
      * @brief 全局优化变量为7纬，分别是4纬的四元数和三维的旋转变量，
@@ -232,9 +223,75 @@ Eigen::Matrix4d inv44(const Eigen::Matrix4d input){
 }
 
 
-Eigen::Matrix3d mineR(const std::vector<Eigen::Matrix4d>& cameradata,
-                    const std::vector<Eigen::Matrix4d>& robotdata){
-        // -------------compute R------------------------
+
+
+int main(int argc , char ** argv){
+
+    // //TODO 
+    std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
+    std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
+    
+    //--------------compute error-----------------
+    int n = cameradata.size();
+    int k = (n*n-n)/2;
+    std::vector<Eigen::Matrix4d> A , B;
+    int idx = 0;
+    double errorofPark = 0 , errorofmine = 0;
+    std::vector<Eigen::Matrix4d> answers = HandEye_data::getTPH();
+
+    Eigen::Matrix4d park = answers[1];
+    Eigen::Matrix4d mine = answers[3];
+    for(int i = 0 ; i<n-1 ; i++){
+        for(int j = i+1 ; j<n ; j++,idx++){
+            Eigen::Matrix4d tempa= inv44(robotdata[j]) * robotdata[i];
+            Eigen::Matrix4d tempb= cameradata[j] * inv44(cameradata[i]);
+
+            Eigen::Matrix4d diffpark = tempa * park - park * tempb;
+            Eigen::Matrix4d diffmine = tempa * mine - mine * tempb;
+
+            errorofPark+= (diffpark.transpose() * diffpark).trace();
+            errorofmine+= (diffmine.transpose() * diffmine).trace();
+
+        }
+    }
+    std::cout<<std::sqrt(errorofPark)/k<<std::endl;;
+    std::cout<<"Mine:" <<std::sqrt(errorofmine)/k<<std::endl;  
+
+    //------------end of compute error ------------
+      
+    //-------------compute t ---------------------
+    // int n = cameradata.size();
+    // int k = (n*n -n)/2;
+    // Eigen::MatrixXd C(3*k , 3);
+    // Eigen::MatrixXd d(3*k , 1);
+    // Eigen::Matrix3d I3 = Eigen::Matrix3d::Identity();
+    // // std::vector< Eigen::Matrix4d> A , B;
+    // int idx = 0;
+    // Eigen::Matrix3d myR =HandEye_data::getans();
+    // for(int i = 0 ; i<n-1 ; i++){
+    //     for(int j = i+1 ; j<n ; j++,idx++){
+    //         Eigen::Matrix4d Hgij= inv44(robotdata[j]) * robotdata[i];
+    //         Eigen::Matrix4d Hcij= cameradata[j] * inv44(cameradata[i]);
+
+    //         Eigen::Matrix3d Rgij = Hgij.block<3,3>(0,0);
+    //         Eigen::Matrix<double,3,1> tgij = Hgij.block<3,1>(0,3);
+    //         Eigen::Matrix<double,3,1> tcij = Hcij.block<3,1>(0,3);
+
+    //         Eigen::Matrix3d I_tgij = I3 - Rgij;
+    //         C.block<3,3>(3*idx , 0) = I_tgij;
+    //         Eigen::Matrix<double ,3,1> A_RB = tgij -myR*tcij;
+
+    //         d.block<3,1>(3*idx,0) = A_RB; 
+    //     }
+    // }
+    // Eigen::Matrix<double ,3,1> myt;
+    // myt = C.bdcSvd(Eigen::ComputeThinU|Eigen::ComputeThinV).solve(d);
+    // std::cout<<myt<<std::endl;
+    // -------------end of compute t------------
+
+
+    return 0;
+    // -------------compute R------------------------
     std::vector<Eigen::Vector3d> RA; //Robot pose 
     std::vector<Eigen::Vector3d> RB;  //Camera pose
 
@@ -301,105 +358,19 @@ Eigen::Matrix3d mineR(const std::vector<Eigen::Matrix4d>& cameradata,
     ceres::Solve(options , &problem , &summary);
 
 
-    // cout<<summary.BriefReport()<<endl;
+    cout<<summary.BriefReport()<<endl;
 
 
     LOG(INFO)<<summary.BriefReport()<<endl;
 
     Eigen::Map<Eigen::Quaterniond> q_ans(init_param);
     Eigen::Map<Eigen::Vector3d> t_ans(init_param+4);
-    // cout<<"Rotation_ans: \n"<<q.matrix()<<endl;
-    // cout<<"Translation_ans: \n"<<t.transpose()<<endl;
+    cout<<"Rotation_ans: \n"<<q.matrix()<<endl;
+    cout<<"Translation_ans: \n"<<t.transpose()<<endl;
 
-    // cout<<"Rotation: \n"<<q_ans.matrix()<<endl;
-    // cout<<"Translation: \n"<<t_ans.transpose()<<endl;
-    return q_ans.matrix();
-}
+    cout<<"Rotation: \n"<<q_ans.matrix()<<endl;
+    cout<<"Translation: \n"<<t_ans.transpose()<<endl;
 
-Eigen::Matrix<double ,3,1> minet(const std::vector<Eigen::Matrix4d>& cameradata,
-                                const std::vector<Eigen::Matrix4d> & robotdata,
-                                const Eigen::Matrix3d &R){
-//-------------compute t ---------------------
-    int n = cameradata.size();
-    int k = (n*n -n)/2;
-    Eigen::MatrixXd C(3*k , 3);
-    Eigen::MatrixXd d(3*k , 1);
-    Eigen::Matrix3d I3 = Eigen::Matrix3d::Identity();
-    // std::vector< Eigen::Matrix4d> A , B;
-    int idx = 0;
-    Eigen::Matrix3d myR =HandEye_data::getans();
-    for(int i = 0 ; i<n-1 ; i++){
-        for(int j = i+1 ; j<n ; j++,idx++){
-            Eigen::Matrix4d Hgij= inv44(robotdata[j]) * robotdata[i];
-            Eigen::Matrix4d Hcij= cameradata[j] * inv44(cameradata[i]);
-
-            Eigen::Matrix3d Rgij = Hgij.block<3,3>(0,0);
-            Eigen::Matrix<double,3,1> tgij = Hgij.block<3,1>(0,3);
-            Eigen::Matrix<double,3,1> tcij = Hcij.block<3,1>(0,3);
-
-            Eigen::Matrix3d I_tgij = I3 - Rgij;
-            C.block<3,3>(3*idx , 0) = I_tgij;
-            Eigen::Matrix<double ,3,1> A_RB = tgij -myR*tcij;
-
-            d.block<3,1>(3*idx,0) = A_RB; 
-        }
-    }
-    Eigen::Matrix<double ,3,1> myt;
-    myt = C.bdcSvd(Eigen::ComputeThinU|Eigen::ComputeThinV).solve(d);
-    // std::cout<<myt<<std::endl;
-    // -------------end of compute t------------
-    return myt;
-}
-
-double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
-                const std::vector<Eigen::Matrix4d>& robotdata , 
-                const Eigen::Matrix4d &T){
-//--------------compute error-----------------
-    int n = cameradata.size();
-    int k = (n*n-n)/2;
-    std::vector<Eigen::Matrix4d> A , B;
-    int idx = 0;
-    double  error = 0;
     
-    for(int i = 0 ; i<n-1 ; i++){
-        for(int j = i+1 ; j<n ; j++,idx++){
-            Eigen::Matrix4d tempa= inv44(robotdata[j]) * robotdata[i];
-            Eigen::Matrix4d tempb= cameradata[j] * inv44(cameradata[i]);
-
-            Eigen::Matrix4d diff = tempa * T - T * tempb;
-            error += (diff.transpose() * diff).trace();
-        }
-    }
-    return sqrt(error)/k;
-    //------------end of compute error ------------
-}
-int main(int argc , char ** argv){
-
-    // //TODO 
-    std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
-    std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
-    
-    // Eigen::Matrix4d init_T = HandEye_data::getTPH()[1];
-    // Eigen::Matrix3d init_R = init_T.block<3,3>(0,0);
-    // std::cout<<init_R.determinant()<<std::endl;
-    // Eigen::Quaterniond init_q(init_R); 
-    // init_q.normalize();
-    // std::cout<<init_q.coeffs().transpose()<<std::endl;
-    // std::cout<<init_q.w()<<std::endl; 
-
-    // Eigen::Map<const Eigen::Quaterniond> orign_q(init_param);
-    // Eigen::Map<const Eigen::Vector3d> origin_t(init_param+4);
-    
-    
-    Eigen::Matrix3d mR = mineR(cameradata,robotdata);
-    Eigen::Matrix<double,3,1> mt = minet(cameradata , robotdata,mR);
-    Eigen::Matrix4d mT = Eigen::Matrix4d::Identity();
-    mT.block<3,3>(0,0) = mR;
-    mT.block<3,1>(0,3) = mt;
-    double error = mineerror(cameradata , robotdata ,mT );
-    std::cout<<"R:\n"<<mR<<std::endl;
-    std::cout<<"t:\n"<<mt<<std::endl;
-    std::cout<<error<<std::endl;
-
     return 0;
 }
