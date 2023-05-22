@@ -191,7 +191,7 @@ public:
     }
 };
 
-cv::Mat Eigen2Opencv(const Eigen::Matrix3d input ){
+cv::Mat Eigen2Opencv33(const Eigen::Matrix3d input ){
     cv::Mat ret;
     ret = (cv::Mat_<double>(3,3)<<
     input(0,0) , input(0,1) , input(0,2),
@@ -200,6 +200,14 @@ cv::Mat Eigen2Opencv(const Eigen::Matrix3d input ){
 
     return ret;
 
+}
+
+Eigen::Vector3d Eigen2Opencv31(cv::Mat input){
+    Eigen::Vector3d temp ; 
+    temp(0,0) = input.at<double>(0,0) ;
+    temp(1,0) = input.at<double>(1,0) ;
+    temp(2,0) = input.at<double>(2,0) ;
+    return temp;
 }
 
 int main(int argc , char ** argv){
@@ -221,17 +229,21 @@ int main(int argc , char ** argv){
             (cameradata[j].block<3,3>(0,0)) *
             (cameradata[i].block<3,3>(0,0).transpose());
 
-            cv::Mat tempa = Eigen2Opencv(hgij);
-            cv::Mat tempb = Eigen2Opencv(hcij);
+            cv::Mat tempRa = Eigen2Opencv33(hgij);
+            cv::Mat tempRb = Eigen2Opencv33(hcij);
 
             //TODO use cv::Rodrigues change R to rotation vector
+            cv::Mat tempa , tempb ;
+            cv::Rodrigues(tempRa , tempa);
+            cv::Rodrigues(tempRb , tempb);
+            A.push_back( Eigen2Opencv31(tempa));
+            B.push_back( Eigen2Opencv31(tempb));
         }
     }
-    
 
 
     
-    return 0;
+    
     // google::InitGoogleLogging(argv[0]);
     // FLAGS_alsologtostderr = true;
     // FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
@@ -241,20 +253,20 @@ int main(int argc , char ** argv){
     Eigen::Map<const Eigen::Quaterniond> q(q_param);
     Eigen::Map<const Eigen::Vector3d> t(t_param);
 
-    std::vector<Eigen::Vector3d> pa , pb(4);
-    CreateRealPoints(pa);
+    // std::vector<Eigen::Vector3d> pa , pb(4);
+    // CreateRealPoints(pa);
 
-    for(int i= 0 ; i<pa.size() ; i++){
-        pb[i] = q*pa[i]+t;
-    }
+    // for(int i= 0 ; i<pa.size() ; i++){
+    //     pb[i] = q*pa[i]+t;
+    // }
 
     /****************/
     ceres::Problem problem;
     ceres::LocalParameterization* localparam = new MyLocalParam();
     problem.AddParameterBlock(init_param , 7 , localparam);
 
-    for(int i = 0 ; i<pa.size(); i++){
-        ceres::CostFunction * percostfunction = new myCostFunctor(pa[i] , pb[i]);
+    for(int i = 0 ; i<A.size(); i++){
+        ceres::CostFunction * percostfunction = new myCostFunctor(B[i] , A[i]);
         problem.AddResidualBlock(percostfunction , nullptr , init_param);
     }
     ceres::Solver::Options options;
