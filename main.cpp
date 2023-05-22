@@ -3,6 +3,7 @@
 #include <math.h>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <Eigen/SVD>
 #include <sophus/so3.hpp>
 #include <ceres/cost_function.h>
 #include <ceres/local_parameterization.h>
@@ -210,14 +211,59 @@ Eigen::Vector3d Eigen2Opencv31(cv::Mat input){
     return temp;
 }
 
+Eigen::Matrix4d inv44(const Eigen::Matrix4d input){
+    Eigen::Matrix4d output = Eigen::Matrix4d::Identity();
+    Eigen::Matrix3d R = (input.block<3,3>(0,0));
+    Eigen::Matrix<double,3,1> t = input.block<3,1>(0,3);
+
+    output.block<3,3>(0,0) = R.transpose();
+    output.block<3,1>(0,3) = -1*(R.transpose())*t;
+
+    return output ;
+}
 int main(int argc , char ** argv){
 
-    //TODO 
-
+    // //TODO 
     std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
     std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
-    std::vector<Eigen::Vector3d> A; //Robot pose 
-    std::vector<Eigen::Vector3d> B;  //Camera pose
+    //-------------compute t ---------------------
+    // int n = cameradata.size();
+    // int k = (n*n -n)/2;
+    // Eigen::MatrixXd C(3*k , 3);
+    // Eigen::MatrixXd d(3*k , 1);
+    // Eigen::Matrix3d I3 = Eigen::Matrix3d::Identity();
+    // // std::vector< Eigen::Matrix4d> A , B;
+    // int idx = 0;
+    // Eigen::Matrix3d myR =HandEye_data::getans();
+    // for(int i = 0 ; i<n-1 ; i++){
+    //     for(int j = i+1 ; j<n ; j++,idx++){
+    //         Eigen::Matrix4d Hgij= inv44(robotdata[j]) * robotdata[i];
+    //         Eigen::Matrix4d Hcij= cameradata[j] * inv44(cameradata[i]);
+
+    //         Eigen::Matrix3d Rgij = Hgij.block<3,3>(0,0);
+    //         Eigen::Matrix<double,3,1> tgij = Hgij.block<3,1>(0,3);
+    //         Eigen::Matrix<double,3,1> tcij = Hcij.block<3,1>(0,3);
+
+    //         Eigen::Matrix3d I_tgij = I3 - Rgij;
+    //         C.block<3,3>(3*idx , 0) = I_tgij;
+    //         Eigen::Matrix<double ,3,1> A_RB = tgij -myR*tcij;
+
+    //         d.block<3,1>(3*idx,0) = A_RB; 
+    //     }
+    // }
+    // Eigen::Matrix<double ,3,1> myt;
+    // myt = C.bdcSvd(Eigen::ComputeThinU|Eigen::ComputeThinV).solve(d);
+    // std::cout<<myt<<std::endl;
+    // -------------end of compute t------------
+
+
+   // std::cout<<C.rows()<<" * "<<C.cols()<<std::endl;
+    // std::cout<<d.rows()<<" * "<<d.cols()<<std::endl;
+
+    
+    // -------------compute R------------------------
+    std::vector<Eigen::Vector3d> RA; //Robot pose 
+    std::vector<Eigen::Vector3d> RB;  //Camera pose
 
     for(int i= 0 ; i<cameradata.size()-1 ; i++){
         for(int j = i+1 ; j<cameradata.size() ; j++){
@@ -236,13 +282,13 @@ int main(int argc , char ** argv){
             cv::Mat tempa , tempb ;
             cv::Rodrigues(tempRa , tempa);
             cv::Rodrigues(tempRb , tempb);
-            A.push_back( Eigen2Opencv31(tempa));
-            B.push_back( Eigen2Opencv31(tempb));
+            RA.push_back( Eigen2Opencv31(tempa));
+            RB.push_back( Eigen2Opencv31(tempb));
         }
     }
+    // ----------------End of compute R---------------
 
 
-    
     
     // google::InitGoogleLogging(argv[0]);
     // FLAGS_alsologtostderr = true;
@@ -265,8 +311,8 @@ int main(int argc , char ** argv){
     ceres::LocalParameterization* localparam = new MyLocalParam();
     problem.AddParameterBlock(init_param , 7 , localparam);
 
-    for(int i = 0 ; i<A.size(); i++){
-        ceres::CostFunction * percostfunction = new myCostFunctor(B[i] , A[i]);
+    for(int i = 0 ; i<RA.size(); i++){
+        ceres::CostFunction * percostfunction = new myCostFunctor(RB[i] , RA[i]);
         problem.AddResidualBlock(percostfunction , nullptr , init_param);
     }
     ceres::Solver::Options options;
