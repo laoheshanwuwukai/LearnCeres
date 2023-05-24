@@ -373,12 +373,22 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
     return sqrt(error)/k;
     //------------end of compute error ------------
 }
+
+Eigen::Matrix4d Tsai(const std::vector<Eigen::Matrix4d>& cameradata , 
+                    const std::vector<Eigen::Matrix4d> & robotdata , int datanumber){
+    Eigen::Matrix4d output = Eigen::Matrix4d::Identity();
+
+
+    return output;
+}
+
+
 int main(int argc , char ** argv){
 
     // //TODO 
     std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
     std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
-    
+    std::cout.precision(7);
     // Eigen::Matrix4d init_T = HandEye_data::getTPH()[1];
     // Eigen::Matrix3d init_R = init_T.block<3,3>(0,0);
     // std::cout<<init_R.determinant()<<std::endl;
@@ -396,10 +406,16 @@ int main(int argc , char ** argv){
     Eigen::Matrix4d mT = Eigen::Matrix4d::Identity();
     mT.block<3,3>(0,0) = mR;
     mT.block<3,1>(0,3) = mt;
-    double error = mineerror(cameradata , robotdata ,mT );
+    std::vector<Eigen::Matrix4d> AllT = HandEye_data::getTPH();
+    double myerror = mineerror(cameradata , robotdata ,mT );
+    double Tsaierror = mineerror(cameradata , robotdata ,AllT[0]);
+    double Parkerror = mineerror(cameradata , robotdata ,AllT[1] );
+    
     std::cout<<"R:\n"<<mR<<std::endl;
     std::cout<<"t:\n"<<mt<<std::endl;
-    std::cout<<error<<std::endl;
+    std::cout<<myerror<<std::endl;
+    std::cout<<Tsaierror<<std::endl;
+    std::cout<<Parkerror<<std::endl;
 
     return 0;
 }
