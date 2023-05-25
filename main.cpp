@@ -374,13 +374,7 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
     //------------end of compute error ------------
 }
 
-Eigen::Matrix4d Tsai(const std::vector<Eigen::Matrix4d>& cameradata , 
-                    const std::vector<Eigen::Matrix4d> & robotdata , int datanumber){
-    Eigen::Matrix4d output = Eigen::Matrix4d::Identity();
 
-
-    return output;
-}
 
 
 int main(int argc , char ** argv){

@@ -35,7 +35,7 @@ class Robot{
         T.block<3,1>(0,3) = t;
     }
     ~Robot(){}
-
+    
     Eigen::Matrix4d T;
     Eigen::Matrix3d R;
     Eigen::Matrix<double , 3, 1> t;
