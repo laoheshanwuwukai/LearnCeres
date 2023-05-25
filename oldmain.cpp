@@ -1,3 +1,4 @@
+//最老版本的优化算法，用于计算刚体位姿变换
 #include <vector>
 #include <iostream>
 #include <math.h>

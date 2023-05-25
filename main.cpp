@@ -121,7 +121,7 @@ double init_param[7] = {
                 (theta - sin(theta))/(pow(theta,3)) * omega_skew_pow2;
         }
 
-        delta_t = J*upslion;
+        // delta_t = J*upslion;
 
         return ;
     }
@@ -145,7 +145,8 @@ public:
     if(jacobians!=nullptr && jacobians[0]!=nullptr){
         Eigen::Matrix<double ,3 , 6> third = Eigen::Matrix<double , 3 , 6>::Zero();
         third.block<3 ,3>(0 , 0) = - skew(pntb_est);
-        third.block<3, 3>(0 , 3) = Eigen::Matrix3d::Identity();
+        //TODO don't change translation
+        // third.block<3, 3>(0 , 3) = Eigen::Matrix3d::Identity();
 
         Eigen::Map<Eigen::Matrix<double , 1 , 7> > J(jacobians[0]);
         J.setZero();
@@ -185,7 +186,9 @@ public:
         Eigen::Map<Eigen::Vector3d> t_plus_delta(x_plus_delta + 4);
 
         q_plus_delta = delta_q * x_q;
-        t_plus_delta = delta_q * x_t + delta_t;
+        //TODO don't change t
+        // t_plus_delta = delta_q * x_t + delta_t;
+
 
         return true;    
     }
@@ -367,7 +370,9 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
             Eigen::Matrix4d tempb= cameradata[j] * inv44(cameradata[i]);
 
             Eigen::Matrix4d diff = tempa * T - T * tempb;
-            error += (diff.transpose() * diff).trace();
+            double pererror  = (diff.transpose() * diff).trace();
+            std::cout<<pererror<<std::endl;
+            error+=pererror;
         }
     }
     return sqrt(error)/k;
@@ -401,14 +406,21 @@ int main(int argc , char ** argv){
     mT.block<3,3>(0,0) = mR;
     mT.block<3,1>(0,3) = mt;
     std::vector<Eigen::Matrix4d> AllT = HandEye_data::getTPH();
+    Eigen::Matrix3d Rpark = AllT[1].block<3,3>(0,0);
+    Eigen::Quaterniond qPark(Rpark);
+    init_param[0] = qPark.x();
+    init_param[1] = qPark.y();
+    init_param[2] = qPark.z();
+    init_param[3] = qPark.w();
+    Eigen::Matrix4d rePark = AllT[1];
+    rePark.block<3,3>(0,0) = qPark.matrix();
+    std::cout<<"myerror:\n";
     double myerror = mineerror(cameradata , robotdata ,mT );
-    double Tsaierror = mineerror(cameradata , robotdata ,AllT[0]);
+    std::cout<<"parkerror:\n";
     double Parkerror = mineerror(cameradata , robotdata ,AllT[1] );
+
     
-    std::cout<<"R:\n"<<mR<<std::endl;
-    std::cout<<"t:\n"<<mt<<std::endl;
     std::cout<<myerror<<std::endl;
-    std::cout<<Tsaierror<<std::endl;
     std::cout<<Parkerror<<std::endl;
 
     return 0;
