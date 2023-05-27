@@ -56,16 +56,16 @@ const double q_param[4] = {0.39036 ,
 
 const double t_param[3] = {1,2,3};
 
-// double init_param[7] = {0,0,0,1,0,0,0};
-double init_param[7] = {
-0.00443276,
-0.00410283,
-0.999621,
--0.0268464,
-0,
-0,
-0
-};
+double init_param[7] = {0,0,0,1,0,0,0};
+// double init_param[7] = {
+// 0.00443276,
+// 0.00410283,
+// 0.999621,
+// -0.0268464,
+// 0,
+// 0,
+// 0
+// };
 
     /**
      * @brief 全局优化变量为7纬，分别是4纬的四元数和三维的旋转变量，
@@ -371,7 +371,7 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
 
             Eigen::Matrix4d diff = tempa * T - T * tempb;
             double pererror  = (diff.transpose() * diff).trace();
-            std::cout<<pererror<<std::endl;
+            // std::cout<<pererror<<std::endl;
             error+=pererror;
         }
     }
@@ -414,13 +414,12 @@ int main(int argc , char ** argv){
     init_param[3] = qPark.w();
     Eigen::Matrix4d rePark = AllT[1];
     rePark.block<3,3>(0,0) = qPark.matrix();
-    std::cout<<"myerror:\n";
     double myerror = mineerror(cameradata , robotdata ,mT );
-    std::cout<<"parkerror:\n";
-    double Parkerror = mineerror(cameradata , robotdata ,AllT[1] );
-
-    
+    std::cout<<"myerror:\n";
     std::cout<<myerror<<std::endl;
+
+    double Parkerror = mineerror(cameradata , robotdata ,AllT[1] );
+    std::cout<<"parkerror:\n";
     std::cout<<Parkerror<<std::endl;
 
     return 0;
