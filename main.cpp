@@ -1,3 +1,4 @@
+//有效的优化方法
 #include <vector>
 #include <iostream>
 #include <math.h>
