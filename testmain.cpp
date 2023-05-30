@@ -1,5 +1,5 @@
 #include <iostream>
-#include "data.cpp"
+// #include "data.cpp"
 #include "Eigen/Dense"
 #include <Eigen/Geometry>
 #include <opencv2/calib3d.hpp>
@@ -16,33 +16,42 @@ cv::Mat Matrix2Mat(Eigen::MatrixXd input ){
     }
     return output;
 }
-
-cv::Mat Eigen2Opencv33(const Eigen::Matrix3d input ){
-    cv::Mat ret;
-    ret = (cv::Mat_<double>(3,3)<<
-    input(0,0) , input(0,1) , input(0,2),
-    input(1,0) , input(1,1) , input(1,2),
-    input(2,0) , input(2,1) , input(2,2));
-
-    return ret;
-}
-cv::Mat Eigen2Opencv31( Eigen::Matrix<double,3,1> input){
-    cv::Mat ret;
-    ret = (cv::Mat_<double>(3,1)<<
-    input(0,1) , input(1,0) , input(2,0)
-    );
-    return ret;
-}
-cv::Mat Eigen2Opencv44(const Eigen::Matrix4d & input){
-    cv::Mat ret;
-    ret = cv::Mat::zeros(4,4,CV_64F);
-    for(int i = 0 ; i<4 ; i++){
-        for(int j = 0 ; j<4 ; j++){
-            ret.at<double>(i , j) = input(i,j);
+Eigen::MatrixXd cvMatToEigen(const cv::Mat& cvMat) {
+    Eigen::MatrixXd eigenMat(cvMat.rows, cvMat.cols);
+    
+    for (int i = 0; i < cvMat.rows; ++i) {
+        for (int j = 0; j < cvMat.cols; ++j) {
+            eigenMat(i, j) = cvMat.at<double>(i, j);
         }
     }
-    return ret;
+    
+    return eigenMat;
 }
+// cv::Mat Eigen2Opencv33(const Eigen::Matrix3d input ){
+//     cv::Mat ret;
+//     ret = (cv::Mat_<double>(3,3)<<
+//     input(0,0) , input(0,1) , input(0,2),
+//     input(1,0) , input(1,1) , input(1,2),
+//     input(2,0) , input(2,1) , input(2,2));
+//     return ret;
+// }
+// cv::Mat Eigen2Opencv31( Eigen::Matrix<double,3,1> input){
+//     cv::Mat ret;
+//     ret = (cv::Mat_<double>(3,1)<<
+//     input(0,1) , input(1,0) , input(2,0)
+//     );
+//     return ret;
+// }
+// cv::Mat Eigen2Opencv44(const Eigen::Matrix4d & input){
+//     cv::Mat ret;
+//     ret = cv::Mat::zeros(4,4,CV_64F);
+//     for(int i = 0 ; i<4 ; i++){
+//         for(int j = 0 ; j<4 ; j++){
+//             ret.at<double>(i , j) = input(i,j);
+//         }
+//     }
+//     return ret;
+// }
 
 void cvRttoH(cv::Mat &H , const cv::Mat& R , const cv::Mat&t){
     H = cv::Mat::eye(4,4,CV_64F);
@@ -102,8 +111,30 @@ Eigen::Vector3d generateRandomVector3D()
     return random_vector;
 }
 
+Eigen::Matrix3d generateRandomRoationerror(){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(-1 , 1);
+    Eigen::Matrix3d random_error=
+        Robot( 0,0,0, dis(gen) , dis(gen) , dis(gen)).R;
+    return random_error;
+}
+Eigen::Matrix<double ,3, 1> generateRandomvectorerror(){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dist(-1, 1);
 
-int main(int argc , char ** argv){
+    Eigen::Matrix<double , 3,1> random_vector;
+    random_vector << dist(gen),
+                    dist(gen),
+                    std::abs(dist(gen));
+    
+    return random_vector;
+}
+
+cv::Mat generateDataandTpark(std::vector<cv::Mat> &retHcs,
+                             std::vector<cv::Mat> &retHgs,
+                             int data_number = 10 ){
 
     Robot Hcg_ans = Robot(50 , 100 , 150 ,30 , 0 , 0);
     Robot Hbt_ans = Robot(500 , 300 , 2000 , 0 , 0 , 0);
@@ -115,7 +146,7 @@ int main(int argc , char ** argv){
     cvHtoRt(cvHbt_ans , cvRbt_ans , cvtbt_ans);    
 
     std::vector<cv::Mat> Rcs , Rgs , tcs , tgs;
-    int data_number = 3;
+    // standard Rc , Rg , tc ,tg
     for(int i = 0 ; i<data_number ; i++){
         Eigen::Matrix3d tempR = generateRandomOrthogonalMatrix3D();
         Eigen::Matrix<double ,3,1> tempt = generateRandomVector3D();
@@ -129,21 +160,50 @@ int main(int argc , char ** argv){
         
         cv::Mat tempH = cvHcg_ans * (Hc * cvHbt_ans);
         Hg = invH(tempH);
-        // std::cout<<Hg<<std::endl;
+        
         cvHtoRt(Hg , Rg , tg);
         Rgs.push_back(Rg);
         tgs.push_back(tg);
-        // std::cout<<Rc <<tc<<std::endl;
-        // std::cout<<Rg <<tg<<std::endl;
+    }
+    
+    
+    // Rc tg error 
+    for(int i = 0 ; i<data_number ; i++){
+        Eigen::Matrix3d errorR = generateRandomRoationerror();
+        cv::Mat cverrorR = Matrix2Mat(errorR);
+        Eigen::Matrix<double , 3,1> errort = generateRandomvectorerror();
+        cv::Mat cverrort = Matrix2Mat(errort);
+        Rcs[i] = cverrorR * Rcs[i];
+        tcs[i] = cverrorR * tcs[i] + cverrort;
+    }
+    // Rg tg error
+    for(int i = 0 ; i<data_number ; i++){
+        Eigen::Matrix3d errorR = generateRandomRoationerror();
+        cv::Mat cverrorR = Matrix2Mat(errorR);
+        Eigen::Matrix<double , 3,1> errort = generateRandomvectorerror();
+        cv::Mat cverrort = Matrix2Mat(errort);
+        Rgs[i] = cverrorR * Rgs[i];
+        tgs[i] = cverrorR * tgs[i] + cverrort;
     }
 
     cv::Mat cvRpark , cvtpark;
     cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRpark , cvtpark , cv::CALIB_HAND_EYE_PARK);
 
-    std::cout<<cvRpark<<std::endl;
-    std::cout<<cvtpark<<std::endl; 
-    std::cout<<cvHcg_ans<<std::endl;
+    // std::cout<<cvRpark<<std::endl;
+    // std::cout<<cvtpark<<std::endl; 
+    // std::cout<<cvHcg_ans<<std::endl;
+    cv::Mat cvHpark ;
+    cvRttoH(cvHpark , cvRpark , cvtpark);
+    retHcs.clear();
+    retHgs.clear();
+    for(int i = 0; i<data_number;i++){
+        cv::Mat retHc  , retHg;
+        cvRttoH(retHc , Rcs[i] , tcs[i]);
+        cvRttoH(retHg , Rgs[i] , tgs[i]);
+        retHcs.push_back(retHc);
+        retHgs.push_back(retHg);
+    } 
 
-    return 0;
+    return cvHpark;
 
 }
