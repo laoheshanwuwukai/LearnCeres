@@ -391,6 +391,12 @@ int main(int argc , char ** argv){
     int data_number = 10;
     std::vector<cv::Mat> Hcs , Hgs;
     cv::Mat cvHpark = generateDataandTpark(Hcs , Hgs, data_number) ;
+    Eigen::Matrix4d Hpark = cvMatToEigen(cvHpark);
+    Eigen::Quaterniond qpark = Eigen::Quaterniond(Hpark.block<3,3>(0,0));
+    // init_param[0] = qpark.x();
+    // init_param[1] = qpark.y();
+    // init_param[2] = qpark.z();
+    // init_param[3] = qpark.w();
 
     // //TODO 
     std::vector< Eigen::Matrix4d > cameradata ;
@@ -413,7 +419,6 @@ int main(int argc , char ** argv){
     mT.block<3,3>(0,0) = mR;
     mT.block<3,1>(0,3) = mt;
     std::cout<<mT<<std::endl;
-    Eigen::Matrix4d Hpark = cvMatToEigen(cvHpark);
     std::cout<<Hpark<<std::endl;
     
     double myerror = mineerror(cameradata , robotdata ,mT );
