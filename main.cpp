@@ -388,11 +388,11 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
 
 int main(int argc , char ** argv){
 
-    int data_number = 10;
+    int data_number = 20;
     std::vector<cv::Mat> Hcs , Hgs;
     cv::Mat cvHpark = generateDataandTpark(Hcs , Hgs, data_number) ;
     Eigen::Matrix4d Hpark = cvMatToEigen(cvHpark);
-    Eigen::Quaterniond qpark = Eigen::Quaterniond(Hpark.block<3,3>(0,0));
+    // Eigen::Quaterniond qpark = Eigen::Quaterniond(Hpark.block<4,3>(0,0));
     // init_param[0] = qpark.x();
     // init_param[1] = qpark.y();
     // init_param[2] = qpark.z();

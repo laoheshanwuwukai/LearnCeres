@@ -114,7 +114,8 @@ Eigen::Vector3d generateRandomVector3D()
 Eigen::Matrix3d generateRandomRoationerror(){
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dis(-0.25 , 0.25);
+    //TODO change rotation error range
+    std::uniform_real_distribution<double> dis(-0.3 , 0.3);
     Eigen::Matrix3d random_error=
         Robot( 0,0,0, dis(gen) , dis(gen) , dis(gen)).R;
     return random_error;
@@ -122,12 +123,13 @@ Eigen::Matrix3d generateRandomRoationerror(){
 Eigen::Matrix<double ,3, 1> generateRandomvectorerror(){
     std::random_device rd;
     std::mt19937 gen(rd());
+    //TOOD change translation error range 
     std::uniform_real_distribution<double> dist(-0.25, 0.25);
 
     Eigen::Matrix<double , 3,1> random_vector;
     random_vector << dist(gen),
                     dist(gen),
-                    std::abs(dist(gen));
+                    dist(gen);
     
     return random_vector;
 }
