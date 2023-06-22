@@ -134,9 +134,14 @@ Eigen::Matrix<double ,3, 1> generateRandomvectorerror(){
     return random_vector;
 }
 
-cv::Mat generateDataandTpark(std::vector<cv::Mat> &retHcs,
+void generateDataandTpark(std::vector<cv::Mat> &retHcs,
                              std::vector<cv::Mat> &retHgs,
-                             int data_number = 10 ){
+                             cv::Mat &cvHpark ,
+                             cv::Mat &cvHtsai, 
+                             cv::Mat &cvHhouard, 
+                             cv::Mat &cvHandreff, 
+                             cv::Mat &cvHdidalas,
+                             int data_number = 10){
 
     Robot Hcg_ans = Robot(50 , 100 , 150 ,30 , 0 , 0);
     Robot Hbt_ans = Robot(500 , 300 , 2000 , 0 , 0 , 0);
@@ -189,13 +194,23 @@ cv::Mat generateDataandTpark(std::vector<cv::Mat> &retHcs,
     }
 
     cv::Mat cvRpark , cvtpark;
+    cv::Mat cvRtsai , cvttsai;
+    cv::Mat cvRhouard , cvthouard;
+    cv::Mat cvRdidalas , cvtdidalas;
+    cv::Mat cvRandreff , cvtandreff;
     cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRpark , cvtpark , cv::CALIB_HAND_EYE_PARK);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRtsai , cvttsai , cv::CALIB_HAND_EYE_TSAI);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRhouard, cvthouard, cv::CALIB_HAND_EYE_HORAUD);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRdidalas, cvtdidalas, cv::CALIB_HAND_EYE_DANIILIDIS);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRandreff, cvtandreff, cv::CALIB_HAND_EYE_ANDREFF);
 
-    // std::cout<<cvRpark<<std::endl;
-    // std::cout<<cvtpark<<std::endl; 
-    // std::cout<<cvHcg_ans<<std::endl;
-    cv::Mat cvHpark ;
     cvRttoH(cvHpark , cvRpark , cvtpark);
+    cvRttoH(cvHtsai , cvRtsai , cvttsai);
+    cvRttoH(cvHhouard, cvRhouard, cvthouard);
+    cvRttoH(cvHandreff, cvRandreff, cvtandreff);
+    cvRttoH(cvHdidalas, cvRdidalas, cvtdidalas);
+
+    
     retHcs.clear();
     retHgs.clear();
     for(int i = 0; i<data_number;i++){
@@ -205,7 +220,4 @@ cv::Mat generateDataandTpark(std::vector<cv::Mat> &retHcs,
         retHcs.push_back(retHc);
         retHgs.push_back(retHg);
     } 
-
-    return cvHpark;
-
 }

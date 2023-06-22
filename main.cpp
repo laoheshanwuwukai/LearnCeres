@@ -388,10 +388,19 @@ double mineerror(const std::vector<Eigen::Matrix4d>& cameradata ,
 
 int main(int argc , char ** argv){
 
-    int data_number = 20;
+    int data_number ;
+    std::string config_file_path = global_defination::WORK_SPACE_PATH +"/config/config.yaml";
+    YAML::Node config_node = YAML::LoadFile(config_file_path);
+    data_number = config_node["Options"]["data_number"].as<int>();
+    std::cout<<"data_number:"<<data_number<<std::endl;
     std::vector<cv::Mat> Hcs , Hgs;
-    cv::Mat cvHpark = generateDataandTpark(Hcs , Hgs, data_number) ;
+    cv::Mat cvHpark , cvHtsai ,cvHhouard , cvHdidalas , cvHandreff; 
+    generateDataandTpark(Hcs , Hgs,  cvHpark , cvHtsai , cvHhouard , cvHandreff , cvHdidalas ,data_number) ;
     Eigen::Matrix4d Hpark = cvMatToEigen(cvHpark);
+    Eigen::Matrix4d Htsai = cvMatToEigen(cvHtsai);
+    Eigen::Matrix4d Hhouard= cvMatToEigen(cvHhouard);
+    Eigen::Matrix4d Hdidalas= cvMatToEigen(cvHdidalas);
+    Eigen::Matrix4d Handreff = cvMatToEigen(cvHandreff);
     // Eigen::Quaterniond qpark = Eigen::Quaterniond(Hpark.block<4,3>(0,0));
     // init_param[0] = qpark.x();
     // init_param[1] = qpark.y();
@@ -418,16 +427,33 @@ int main(int argc , char ** argv){
     Eigen::Matrix4d mT = Eigen::Matrix4d::Identity();
     mT.block<3,3>(0,0) = mR;
     mT.block<3,1>(0,3) = mt;
-    std::cout<<mT<<std::endl;
-    std::cout<<Hpark<<std::endl;
+    std::cout<<"H_my:\n" <<mT<<std::endl;
+    std::cout<<"H_tsai:\n"<<Htsai<<std::endl;
+    std::cout<<"H_park:\n"<<Hpark<<std::endl;
+    std::cout<<"H_houard:\n"<<Hhouard<<std::endl;
+    std::cout<<"H_andreff:\n"<<Handreff<<std::endl;
+    std::cout<<"H_didalas:\n"<<Hdidalas<<std::endl;
     
     double myerror = mineerror(cameradata , robotdata ,mT );
     std::cout<<"myerror:\n";
     std::cout<<myerror<<std::endl;
 
+    double tsaierror = mineerror(cameradata , robotdata , Htsai);
+    std::cout<<"tsai_error:\n";
+    std::cout<<tsaierror<<std::endl;
+
     double Parkerror = mineerror(cameradata , robotdata ,Hpark );
     std::cout<<"parkerror:\n";
     std::cout<<Parkerror<<std::endl;
+
+    double houarderror = mineerror(cameradata , robotdata , Hhouard);
+    std::cout<<"houard_error:\n"<<houarderror<<std::endl;
+
+    double andrefferror = mineerror(cameradata , robotdata , Handreff);
+    std::cout<<"andreff_error:\n"<<andrefferror<<std::endl;
+
+    double didalaserror = mineerror(cameradata , robotdata , Hdidalas);
+    std::cout<<"didalas_error:\n"<< didalaserror<<std::endl;
 
     return 0;
 }
