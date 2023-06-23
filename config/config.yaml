@@ -1,3 +1,5 @@
 Options:
     max_num_iterations: 10000 #最大迭代次数
-    data_number: 15
+    data_number: 25
+    R_error: 0.05
+    t_error: 0.1
