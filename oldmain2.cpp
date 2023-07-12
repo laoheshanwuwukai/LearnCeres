@@ -223,8 +223,55 @@ Eigen::Matrix4d inv44(const Eigen::Matrix4d input){
     return output ;
 }
 
+Eigen::MatrixXd cvMatToEigen(const cv::Mat& cvMat) {
+    Eigen::MatrixXd eigenMat(cvMat.rows, cvMat.cols);
+    
+    for (int i = 0; i < cvMat.rows; ++i) {
+        for (int j = 0; j < cvMat.cols; ++j) {
+            eigenMat(i, j) = cvMat.at<double>(i, j);
+        }
+    }
+    
+    return eigenMat;
+}
+cv::Mat Matrix2Mat(Eigen::MatrixXd input ){
+    int row = input.rows();
+    int col = input.cols();
+    cv::Mat output(row , col , CV_64F);
+    for(int i = 0 ; i<row ; i++){
+        for(int j = 0 ; j<col ; j++){
+            output.at<double>(i , j ) = input(i,j);
+        }
+    }
+    return output;
+}
 
+//andreff ans
+void kkkk(std::vector<Eigen::Matrix4d> & cameradata , 
+            std::vector<Eigen::Matrix4d> & robotdata ,
+            cv::Mat & cvRtsai , cv::Mat & cvttsai , 
+            cv::Mat & cvRpark , cv::Mat & cvtpark ,
+            cv::Mat & cvRhouard , cv::Mat &cvthouard )
+{
+    std::vector<cv::Mat> Rcs , Rgs , tcs , tgs;
+    // standard Rc , Rg , tc ,tg
+    int data_number = cameradata.size();
+    for(int i = 0 ; i<data_number-2 ; i++){
+        cv::Mat Rc , Rg , tc , tg ;
+        Rc = Matrix2Mat(cameradata[i].block<3,3>(0,0));
+        Rg = Matrix2Mat(robotdata[i].block<3,3>(0,0));
+        tc = Matrix2Mat(cameradata[i].block<3,1>(0,3));
+        tg = Matrix2Mat(robotdata[i].block<3,1>(0,3));
+        Rcs.push_back(Rc);
+        tcs.push_back(tc);
+        Rgs.push_back(Rg);
+        tgs.push_back(tg);
+    }
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRtsai, cvttsai, cv::CALIB_HAND_EYE_TSAI);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRpark, cvtpark, cv::CALIB_HAND_EYE_PARK);
+    cv::calibrateHandEye(Rgs , tgs , Rcs , tcs , cvRhouard, cvthouard, cv::CALIB_HAND_EYE_HORAUD);
 
+}
 
 int main(int argc , char ** argv){
 
@@ -232,15 +279,30 @@ int main(int argc , char ** argv){
     std::vector< Eigen::Matrix4d > cameradata =HandEye_data::getCameradata();
     std::vector< Eigen::Matrix4d > robotdata = HandEye_data::getRobotdata();
     
+    cv::Mat cvRtsai , cvttsai , cvRpark , cvtpark , cvRhouard , cvthouard;
+    kkkk(cameradata , robotdata  , cvRtsai , cvttsai , cvRpark , cvtpark , cvRhouard , cvthouard);
+    Eigen::Matrix4d park , Tsai , houard;
+    Tsai = Eigen::Matrix4d::Identity();
+    park = Eigen::Matrix4d::Identity();
+    houard = Eigen::Matrix4d::Identity();
+    Tsai.block<3,3>(0,0) = cvMatToEigen(cvRtsai);
+    park.block<3,3>(0,0) = cvMatToEigen(cvRpark);
+    houard.block<3,3>(0,0) = cvMatToEigen(cvRhouard);
+    Tsai.block<3,1>(0,3)  = cvMatToEigen(cvttsai);
+    park.block<3,1>(0,3)  = cvMatToEigen(cvtpark);
+    houard.block<3,1>(0,3)  = cvMatToEigen(cvthouard);
+
+    std::cout <<Tsai<<std::endl;
+    std::cout <<park<<std::endl;
+    std::cout <<houard<<std::endl;
     //--------------compute error-----------------
     int n = cameradata.size();
     int k = (n*n-n)/2;
     std::vector<Eigen::Matrix4d> A , B;
     int idx = 0;
-    double errorofPark = 0 , errorofmine = 0;
+    double errorofPark = 0 , errorofmine = 0 , errorofTsai = 0 , errorofHouard = 0;
     std::vector<Eigen::Matrix4d> answers = HandEye_data::getTPH();
 
-    Eigen::Matrix4d park = answers[1];
     Eigen::Matrix4d mine = answers[3];
     for(int i = 0 ; i<n-1 ; i++){
         for(int j = i+1 ; j<n ; j++,idx++){
@@ -249,18 +311,104 @@ int main(int argc , char ** argv){
 
             Eigen::Matrix4d diffpark = tempa * park - park * tempb;
             Eigen::Matrix4d diffmine = tempa * mine - mine * tempb;
-
+            Eigen::Matrix4d difftsai = tempa * Tsai - Tsai * tempb;
+            Eigen::Matrix4d diffhouard = tempa * houard - houard * tempb;
+            errorofTsai+= (difftsai.transpose() * difftsai).trace();
+            errorofHouard += (diffhouard.transpose()*diffhouard).trace();
             errorofPark+= (diffpark.transpose() * diffpark).trace();
             errorofmine+= (diffmine.transpose() * diffmine).trace();
 
         }
     }
-    std::cout<<std::sqrt(errorofPark)/k<<std::endl;;
+    
+    std::cout<<"Tsai:"<<std::sqrt(errorofTsai)/k<<std::endl;
+    std::cout<<"Park:"<<std::sqrt(errorofPark)/k<<std::endl;
+    std::cout<<"Houar:"<<std::sqrt(errorofHouard)/k<<std::endl;
     std::cout<<"Mine:" <<std::sqrt(errorofmine)/k<<std::endl;  
-
     //------------end of compute error ------------
-      
-    //-------------compute t ---------------------
+    return 0;
+//------------------
+    // -------------compute R------------------------
+    // std::vector<Eigen::Vector3d> RA; //Robot pose 
+    // std::vector<Eigen::Vector3d> RB;  //Camera pose
+
+    // for(int i= 0 ; i<cameradata.size()-1 ; i++){
+    //     for(int j = i+1 ; j<cameradata.size() ; j++){
+    //         Eigen::Matrix3d hgij = 
+    //         (robotdata[j].block<3,3>(0,0).transpose())
+    //         * (robotdata[i].block<3,3>(0,0));
+
+    //         Eigen::Matrix3d hcij = 
+    //         (cameradata[j].block<3,3>(0,0)) *
+    //         (cameradata[i].block<3,3>(0,0).transpose());
+
+    //         cv::Mat tempRa = Eigen2Opencv33(hgij);
+    //         cv::Mat tempRb = Eigen2Opencv33(hcij);
+
+    //         //TODO use cv::Rodrigues change R to rotation vector
+    //         cv::Mat tempa , tempb ;
+    //         cv::Rodrigues(tempRa , tempa);
+    //         cv::Rodrigues(tempRb , tempb);
+    //         RA.push_back( Eigen2Opencv31(tempa));
+    //         RB.push_back( Eigen2Opencv31(tempb));
+    //     }
+    // }
+    // // ----------------End of compute R---------------
+
+
+    
+    // // google::InitGoogleLogging(argv[0]);
+    // // FLAGS_alsologtostderr = true;
+    // // FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
+    // std::string config_file_path = global_defination::WORK_SPACE_PATH +"/config/config.yaml";
+    // YAML::Node config_node = YAML::LoadFile(config_file_path);
+    // /*********数据**********/
+    // Eigen::Map<const Eigen::Quaterniond> q(q_param);
+    // Eigen::Map<const Eigen::Vector3d> t(t_param);
+
+    // // std::vector<Eigen::Vector3d> pa , pb(4);
+    // // CreateRealPoints(pa);
+
+    // // for(int i= 0 ; i<pa.size() ; i++){
+    // //     pb[i] = q*pa[i]+t;
+    // // }
+
+    // /****************/
+    // ceres::Problem problem;
+    // ceres::LocalParameterization* localparam = new MyLocalParam();
+    // problem.AddParameterBlock(init_param , 7 , localparam);
+
+    // for(int i = 0 ; i<RA.size(); i++){
+    //     ceres::CostFunction * percostfunction = new myCostFunctor(RB[i] , RA[i]);
+    //     problem.AddResidualBlock(percostfunction , nullptr , init_param);
+    // }
+    // ceres::Solver::Options options;
+    // ceres::Solver::Summary summary;
+    // options.linear_solver_type = ceres::DENSE_QR;
+    // options.minimizer_progress_to_stdout = true;
+
+    // int max_num_iterations = config_node["Options"]["max_num_iterations"].as<int>();
+    // LOG(INFO)<<"Options::max_num_iterations: "<<max_num_iterations;
+
+    // options.max_num_iterations =max_num_iterations;
+    // //TODO 
+    // options.gradient_tolerance = 1e-20;
+    // options.function_tolerance = 1e-20;
+    // ceres::Solve(options , &problem , &summary);
+
+    // cout<<summary.BriefReport()<<endl;
+
+    // LOG(INFO)<<summary.BriefReport()<<endl;
+
+    // Eigen::Map<Eigen::Quaterniond> q_ans(init_param);
+    // Eigen::Map<Eigen::Vector3d> t_ans(init_param+4);
+    // // cout<<"Rotation_ans: \n"<<q.matrix()<<endl;
+    // // cout<<"Translation_ans: \n"<<t.transpose()<<endl;
+
+    // cout<<"My Rotation: \n"<<q_ans.matrix()<<endl;
+    // // cout<<"Translation: \n"<<t_ans.transpose()<<endl;
+
+    // //-------------compute t ---------------------
     // int n = cameradata.size();
     // int k = (n*n -n)/2;
     // Eigen::MatrixXd C(3*k , 3);
@@ -268,7 +416,7 @@ int main(int argc , char ** argv){
     // Eigen::Matrix3d I3 = Eigen::Matrix3d::Identity();
     // // std::vector< Eigen::Matrix4d> A , B;
     // int idx = 0;
-    // Eigen::Matrix3d myR =HandEye_data::getans();
+    // Eigen::Matrix3d myR =q_ans.matrix();
     // for(int i = 0 ; i<n-1 ; i++){
     //     for(int j = i+1 ; j<n ; j++,idx++){
     //         Eigen::Matrix4d Hgij= inv44(robotdata[j]) * robotdata[i];
@@ -287,91 +435,10 @@ int main(int argc , char ** argv){
     // }
     // Eigen::Matrix<double ,3,1> myt;
     // myt = C.bdcSvd(Eigen::ComputeThinU|Eigen::ComputeThinV).solve(d);
-    // std::cout<<myt<<std::endl;
-    // -------------end of compute t------------
-
+    // std::cout<<"my t:"<<myt<<std::endl;
+    // // -------------end of compute t------------
+//------------------------------------
 
     return 0;
-    // -------------compute R------------------------
-    std::vector<Eigen::Vector3d> RA; //Robot pose 
-    std::vector<Eigen::Vector3d> RB;  //Camera pose
 
-    for(int i= 0 ; i<cameradata.size()-1 ; i++){
-        for(int j = i+1 ; j<cameradata.size() ; j++){
-            Eigen::Matrix3d hgij = 
-            (robotdata[j].block<3,3>(0,0).transpose())
-            * (robotdata[i].block<3,3>(0,0));
-
-            Eigen::Matrix3d hcij = 
-            (cameradata[j].block<3,3>(0,0)) *
-            (cameradata[i].block<3,3>(0,0).transpose());
-
-            cv::Mat tempRa = Eigen2Opencv33(hgij);
-            cv::Mat tempRb = Eigen2Opencv33(hcij);
-
-            //TODO use cv::Rodrigues change R to rotation vector
-            cv::Mat tempa , tempb ;
-            cv::Rodrigues(tempRa , tempa);
-            cv::Rodrigues(tempRb , tempb);
-            RA.push_back( Eigen2Opencv31(tempa));
-            RB.push_back( Eigen2Opencv31(tempb));
-        }
-    }
-    // ----------------End of compute R---------------
-
-
-    
-    // google::InitGoogleLogging(argv[0]);
-    // FLAGS_alsologtostderr = true;
-    // FLAGS_log_dir = global_defination::WORK_SPACE_PATH+"/log";
-    std::string config_file_path = global_defination::WORK_SPACE_PATH +"/config/config.yaml";
-    YAML::Node config_node = YAML::LoadFile(config_file_path);
-    /*********数据**********/
-    Eigen::Map<const Eigen::Quaterniond> q(q_param);
-    Eigen::Map<const Eigen::Vector3d> t(t_param);
-
-    // std::vector<Eigen::Vector3d> pa , pb(4);
-    // CreateRealPoints(pa);
-
-    // for(int i= 0 ; i<pa.size() ; i++){
-    //     pb[i] = q*pa[i]+t;
-    // }
-
-    /****************/
-    ceres::Problem problem;
-    ceres::LocalParameterization* localparam = new MyLocalParam();
-    problem.AddParameterBlock(init_param , 7 , localparam);
-
-    for(int i = 0 ; i<RA.size(); i++){
-        ceres::CostFunction * percostfunction = new myCostFunctor(RB[i] , RA[i]);
-        problem.AddResidualBlock(percostfunction , nullptr , init_param);
-    }
-    ceres::Solver::Options options;
-    ceres::Solver::Summary summary;
-    options.linear_solver_type = ceres::DENSE_QR;
-    options.minimizer_progress_to_stdout = true;
-
-    int max_num_iterations = config_node["Options"]["max_num_iterations"].as<int>();
-    LOG(INFO)<<"Options::max_num_iterations: "<<max_num_iterations;
-
-    options.max_num_iterations =max_num_iterations;
-
-    ceres::Solve(options , &problem , &summary);
-
-
-    cout<<summary.BriefReport()<<endl;
-
-
-    LOG(INFO)<<summary.BriefReport()<<endl;
-
-    Eigen::Map<Eigen::Quaterniond> q_ans(init_param);
-    Eigen::Map<Eigen::Vector3d> t_ans(init_param+4);
-    cout<<"Rotation_ans: \n"<<q.matrix()<<endl;
-    cout<<"Translation_ans: \n"<<t.transpose()<<endl;
-
-    cout<<"Rotation: \n"<<q_ans.matrix()<<endl;
-    cout<<"Translation: \n"<<t_ans.transpose()<<endl;
-
-    
-    return 0;
 }

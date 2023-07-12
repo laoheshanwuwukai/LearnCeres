@@ -33,7 +33,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 #TODO change the name of xxx.cpp
 add_executable( ${PROJECT_NAME} 
                 # testmain.cpp
-                main.cpp 
+                oldmain2.cpp 
                 # src/Auto_Derivatives.cpp
                 # src/Numeric_Derivatives.cpp
                 # src/Analytic_Derivatives.cpp

@@ -452,8 +452,32 @@ int main(int argc , char ** argv){
     double andrefferror = mineerror(cameradata , robotdata , Handreff);
     std::cout<<"andreff_error:\n"<<andrefferror<<std::endl;
 
-    double didalaserror = mineerror(cameradata , robotdata , Hdidalas);
-    std::cout<<"didalas_error:\n"<< didalaserror<<std::endl;
+    // double didalaserror = mineerror(cameradata , robotdata , Hdidalas);
+    // std::cout<<"didalas_error:\n"<< didalaserror<<std::endl;
 
+    Eigen::Vector3d angle_ans ;
+    Eigen::Vector3d trans_ans;
+    trans_ans<< 50 , 100 , 150;
+    angle_ans<< 0 , 0 ,30;
+    Eigen::Vector3d myangle = mT.block<3,3>(0 , 0).eulerAngles(2,1,0)*180/M_PI;
+    std::cout<<"angle error my:\n"<< myangle-angle_ans<<std::endl;
+    std::cout<<"trans error my:\n"<< mT.block<3,1>(0,3) - trans_ans<<std::endl;
+    // std::cout<<"trans error norm my:\n"<<(mT.block<3,1>(0,3) - trans_ans).norm();
+
+    Eigen::Vector3d tsai_angle = Htsai.block<3,3>(0 , 0).eulerAngles(2,1,0)*180/M_PI;
+    std::cout<<"angle error Tsai :\n"<< tsai_angle-angle_ans<<std::endl;
+    std::cout<<"trans error Tsai :\n"<< Htsai.block<3,1>(0,3) - trans_ans<<std::endl;
+
+    Eigen::Vector3d park_angle = Hpark.block<3,3>(0 , 0).eulerAngles(2,1,0)*180/M_PI;
+    std::cout<<"angle error park:\n"<< park_angle-angle_ans<<std::endl;
+    std::cout<<"trans error park:\n"<< Hpark.block<3,1>(0,3) - trans_ans<<std::endl;
+
+    Eigen::Vector3d Houard_angle = Hhouard.block<3,3>(0 , 0).eulerAngles(2,1,0)*180/M_PI;
+    std::cout<<"angle error houard:\n"<< Houard_angle-angle_ans<<std::endl;
+    std::cout<<"trans error houard:\n"<< Hhouard.block<3,1>(0,3) - trans_ans<<std::endl;
+
+    Eigen::Vector3d Andreff_angle = Handreff.block<3,3>(0 , 0).eulerAngles(2,1,0)*180/M_PI;
+    std::cout<<"angle error andreff:\n"<< Andreff_angle-angle_ans<<std::endl;
+    std::cout<<"trans error andreff:\n"<< Handreff.block<3,1>(0,3) - trans_ans<<std::endl;
     return 0;
 }
